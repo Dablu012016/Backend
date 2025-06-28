@@ -7,7 +7,6 @@ import { apiResponse } from "../utils/apiResponse.js";
 const registerUser = asyncHandler(async (res, req) => {
     // get user details from frontend
     const { username, email, fullName, password } = req.body;
-    console.log("email:", email);
 
     // validation - not empty
     if ([fullName, email, password, username].some((field) => field?.trim() === "")) {
@@ -15,7 +14,7 @@ const registerUser = asyncHandler(async (res, req) => {
     };
 
     // check if user already exist: username, email
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     });
 
@@ -23,12 +22,16 @@ const registerUser = asyncHandler(async (res, req) => {
         throw new apiError(409, "User with email or username already exists");
     };
     // check for images, check for avatar
-    const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    const avatarLocalPath = req.files?.avatar[0]?.path;    
 
     if (!avatarLocalPath) {
         throw new apiError(400, "Avatar file is required");
     };
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
 
     // upload them to cloudinary, avatar
     const avatar = await uploadOnCloudinary(avatarLocalPath);
